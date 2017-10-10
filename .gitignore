@@ -1,0 +1,5 @@
+.idea/
+oj.sql
+oj.cfg
+oj.db
+__pycache__/

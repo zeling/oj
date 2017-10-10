@@ -13,6 +13,15 @@ app.install(SQLitePlugin(dbfile=app.config.get('sqlite.dbfile')))
 exp_time = eval(app.config.get('jwt.exp_time'))
 jwt_secret = app.config.get('jwt.secret')
 
+class ErrorHandler:
+    def get(self, ignore, default):
+        def error_handler(error):
+            from json import dumps
+            from bottle import tob
+            return tob(dumps({ "status_code": error.status_code, "status": error.status, "reason": error.body }))
+        return error_handler
+
+app.error_handler = ErrorHandler()
 
 def require_auth(f):
     def wrapped_func(*args, **kwargs):
@@ -35,7 +44,7 @@ def require_auth(f):
     return wrapped_func
 
 
-@app.post('/api/authenticate')
+@app.post('/api/token')
 def auth(db):
     user_info = request.json
     try:
@@ -55,7 +64,14 @@ def auth(db):
     }
     return {'token': encode(token, jwt_secret).decode('utf-8')}
 
-@app.post('/api/')
+@app.post('/api/submission')
+@require_auth
+def submit(user, role):
+    if role is not "student":
+        abort(401, 'Authorization failed')
+
+
+@app.post('/api/status')
 
 @app.get('/hello')
 @require_auth
@@ -66,4 +82,5 @@ def hello(user):
 def home():
     return "FUCK"
 
-app.run()
+if __name__ == '__main__':
+    app.run()
